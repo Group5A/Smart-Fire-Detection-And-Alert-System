@@ -15,7 +15,7 @@ SoftwareSerial sim900a(10, 11);
 #define BUZZER_PIN 9
 
 // Configuration
-const char* phoneNumber = "+233559723974";
+const char* phoneNumber = "+233**********";
 const char* smsMessage =
   "FIRE ALERT! Fire detected at your location! Evacuate immediately!";
 
