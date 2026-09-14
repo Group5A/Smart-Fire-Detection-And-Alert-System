@@ -1,0 +1,230 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+
+// LCD Setup
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// SIM900A GSM Module
+SoftwareSerial sim900a(10, 11);
+
+// Pin Definitions
+#define FLAME_SENSOR_PIN 2
+#define GREEN_LED_PIN 7
+#define RED_LED_PIN 8
+#define BUZZER_PIN 9
+
+// Configuration
+const char* phoneNumber = "+233559723974";
+const char* smsMessage =
+  "FIRE ALERT! Fire detected at your location! Evacuate immediately!";
+
+// Variables
+bool alertSent = false;
+
+void setup() {
+
+  // Configure pins
+  pinMode(FLAME_SENSOR_PIN, INPUT_PULLUP);
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  // Initial states
+  digitalWrite(GREEN_LED_PIN, LOW);
+  digitalWrite(RED_LED_PIN, LOW);
+  digitalWrite(BUZZER_PIN, LOW);
+
+  // LCD initialization
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
+  // Serial communication
+  Serial.begin(9600);
+  sim900a.begin(9600);
+
+  // Startup display
+  lcd.setCursor(0, 0);
+  lcd.print("Fire Detection");
+  lcd.setCursor(0, 1);
+  lcd.print("System Ready!");
+
+  Serial.println("=== FIRE DETECTION SYSTEM ===");
+  Serial.println("SIM900 Ready - Monitoring for fire");
+
+  delay(2000);
+
+  // Test buzzer briefly
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(200);
+  digitalWrite(BUZZER_PIN, LOW);
+
+  // Initialize SMS text mode
+  sim900a.println("AT+CMGF=1");
+  delay(1000);
+
+  // System enters normal monitoring state
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  digitalWrite(RED_LED_PIN, LOW);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Monitoring...");
+  lcd.setCursor(0, 1);
+  lcd.print("No Fire");
+
+  Serial.println("System Ready!");
+}
+
+void loop() {
+
+  bool fireDetected =
+      (digitalRead(FLAME_SENSOR_PIN) == LOW);
+
+  // ==========================
+  // FIRE DETECTED
+  // ==========================
+
+  if (fireDetected && !alertSent) {
+
+    Serial.println("!!! FIRE DETECTED !!!");
+
+    // LED status
+    digitalWrite(GREEN_LED_PIN, LOW);
+    digitalWrite(RED_LED_PIN, HIGH);
+
+    // Turn buzzer ON
+    digitalWrite(BUZZER_PIN, HIGH);
+
+    // LCD warning
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("!!! FIRE !!!");
+    lcd.setCursor(0, 1);
+    lcd.print("Sending Alert!");
+
+    // Send SMS
+    sendSMS();
+
+    // Prevent repeated SMS
+    alertSent = true;
+
+    // Update LCD
+    lcd.setCursor(0, 1);
+    lcd.print("Alert Sent!    ");
+
+    delay(2000);
+
+    lcd.setCursor(0, 1);
+    lcd.print("EVACUATE NOW!  ");
+  }
+
+  // ==========================
+  // FIRE STILL PRESENT
+  // ==========================
+
+  else if (fireDetected && alertSent) {
+
+    // Keep emergency indicators active
+    digitalWrite(GREEN_LED_PIN, LOW);
+    digitalWrite(RED_LED_PIN, HIGH);
+    digitalWrite(BUZZER_PIN, HIGH);
+  }
+
+  // ==========================
+  // NO FIRE
+  // ==========================
+
+  else if (!fireDetected) {
+
+    // Normal LED status
+    digitalWrite(RED_LED_PIN, LOW);
+    digitalWrite(GREEN_LED_PIN, HIGH);
+
+    // Turn buzzer OFF
+    digitalWrite(BUZZER_PIN, LOW);
+
+    // Reset after previous fire
+    if (alertSent) {
+
+      Serial.println(
+        "Fire extinguished - System reset"
+      );
+
+      alertSent = false;
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("System Reset");
+      lcd.setCursor(0, 1);
+      lcd.print("Monitoring...");
+
+      delay(2000);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Monitoring...");
+      lcd.setCursor(0, 1);
+      lcd.print("No Fire");
+    }
+  }
+
+  delay(200);
+}
+
+
+// ==========================
+// SEND SMS FUNCTION
+// ==========================
+
+void sendSMS() {
+
+  Serial.println(
+    "Sending SMS to " + String(phoneNumber) + "..."
+  );
+
+  // Set SMS text mode
+  sim900a.println("AT+CMGF=1");
+  delay(1000);
+
+  // Set recipient
+  sim900a.print("AT+CMGS=\"");
+  sim900a.print(phoneNumber);
+  sim900a.println("\"");
+
+  delay(1000);
+
+  // Send SMS message
+  sim900a.print(smsMessage);
+
+  delay(1000);
+
+  // Ctrl + Z sends the SMS
+  sim900a.write(26);
+
+  delay(5000);
+
+  // Check SIM900A response
+  if (sim900a.available()) {
+
+    String resp = sim900a.readString();
+
+    Serial.println( "Module Response: " + resp );
+if (resp.indexOf("+CMGS") >= 0) {
+
+  Serial.println(
+    "SMS SENT SUCCESSFULLY!"
+  );
+
+} else {
+
+  Serial.println(
+    "SMS SEND ERROR. Check credit or network registration."
+  );
+}
+} else {
+Serial.println(
+  "No response from module during transmission."
+);
+} }
