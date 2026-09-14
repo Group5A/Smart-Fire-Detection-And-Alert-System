@@ -129,5 +129,3 @@ The recipient's phone number is defined in the source code:
 const char* phoneNumber = "YOUR_PHONE_NUMBER";
 ```
 Replace this with the intended emergency contact number before testing.
-vels
-* 🔐 Improve system security and reliability.
