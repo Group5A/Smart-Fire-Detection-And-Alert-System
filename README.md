@@ -128,10 +128,8 @@ The recipient's phone number is defined in the source code:
 ```cpp
 const char* phoneNumber = "YOUR_PHONE_NUMBER";
 ```
-
 Replace this with the intended emergency contact number before testing.
 
-> ⚠️ Do not commit a real personal phone number to a public GitHub repository.
 
 ## ▶️ Getting Started
 
@@ -226,11 +224,4 @@ The system can be tested using the following scenarios:
 * 📊 Store fire/sensor events
 * 🗺️ Support multiple detection zones
 * 🔔 Add multiple alarm levels
-* 🔐 Improve system security and reliability
-
-## ⚠️ Disclaimer
-
-This project is an **educational prototype** and should not be considered a certified fire safety or life-safety system.
-
-For real-world deployment, professional fire-safety engineering, certified sensors, reliable power systems, and appropriate regulatory testing are required.
-
+* 🔐 Improve system security and reliability.
